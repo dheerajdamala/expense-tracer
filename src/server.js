@@ -11,9 +11,12 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy - required for Render
+app.set('trust proxy', true);
+
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl} (${req.ip})`);
   next();
 });
 
@@ -22,12 +25,19 @@ app.use(cors());
 app.use(express.json());
 app.use(rateLimiter);
 
+// Root endpoint redirect
+app.get('/', (req, res) => {
+  console.log('Root endpoint accessed, redirecting to /api/health');
+  res.redirect('/api/health');
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   console.log('Health check endpoint called');
   res.status(200).json({ 
     status: 'ok',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development'
   });
 });
 
@@ -42,10 +52,11 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
-  console.log(`404 - Not Found: ${req.method} ${req.url}`);
+  console.log(`404 - Not Found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ 
     error: 'Not Found', 
-    path: req.url,
+    path: req.originalUrl,
+    method: req.method,
     availableEndpoints: [
       '/api/health',
       '/api/transactions',
@@ -66,13 +77,15 @@ initDB()
     }
     
     app.listen(PORT, HOST, () => {
+      const baseUrl = `http://${HOST}:${PORT}`;
       console.log(`Server is running on ${HOST}:${PORT}`);
-      console.log('Available endpoints:');
-      console.log('- Health check: /api/health');
-      console.log('- Transactions: /api/transactions');
-      console.log('- Transaction summary: /api/transactions/summary/:userId');
-      console.log('- User transactions: /api/transactions/:userId');
+      console.log('\nAvailable endpoints:');
+      console.log(`- Health check: ${baseUrl}/api/health`);
+      console.log(`- Transactions: ${baseUrl}/api/transactions`);
+      console.log(`- Transaction summary: ${baseUrl}/api/transactions/summary/:userId`);
+      console.log(`- User transactions: ${baseUrl}/api/transactions/:userId`);
       console.log('\nEnvironment:', process.env.NODE_ENV || 'development');
+      console.log('Proxy trusted:', app.get('trust proxy'));
     });
   })
   .catch(error => {

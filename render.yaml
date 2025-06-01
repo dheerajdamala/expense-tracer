@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: expense-tracker-1
+    env: node
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+    routes:
+      - type: rewrite
+        source: /*
+        destination: / 
