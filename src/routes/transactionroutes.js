@@ -1,15 +1,23 @@
 import express from 'express';
-import {createTransaction,deleteTransaction, getTransactionsByUserId, getTransactionSummary} from '../controllers/transactionController.js';
+import {
+  createTransaction,
+  deleteTransaction,
+  getTransactionsByUserId,
+  getTransactionSummary
+} from '../controllers/transactionController.js';
 
 const router = express.Router();
 
-router.delete("/:id",deleteTransaction);
+// Create new transaction
+router.post("/", createTransaction);
 
+// Get transaction summary
+router.get("/summary/:userId", getTransactionSummary);
+
+// Get all transactions for a user
 router.get("/:userId", getTransactionsByUserId);
 
-router.post("/",createTransaction);
-
-router.get("/summary/:userId",getTransactionSummary);
-
+// Delete a transaction
+router.delete("/:id", deleteTransaction);
 
 export default router;

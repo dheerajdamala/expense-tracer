@@ -1,6 +1,7 @@
 //const express = require('express');
 import express from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import {initDB} from './config/db.js';
 import job from './config/cron.js'; // Adjust the path as necessary
 import rateLimiter from './middleware/rateLimiter.js';
@@ -15,6 +16,7 @@ job.start(); // Start the cron job if in production
 }
 
 //midleware
+app.use(cors());
 app.use(rateLimiter);
 app.use(express.json());
 
@@ -31,8 +33,11 @@ initDB().then(() => {
    
 
 app.listen(PORT, () => {
-  console.log('Server is running up on port: '|PORT);
+  console.log(`Server is running on port: ${PORT}`);
 });
+}).catch(error => {
+  console.error('Failed to initialize database:', error);
+  process.exit(1);
 });
 
 
