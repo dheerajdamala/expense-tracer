@@ -25,14 +25,11 @@ app.use(cors());
 app.use(express.json());
 app.use(rateLimiter);
 
-// Root endpoint redirect
-app.get('/', (req, res) => {
-  console.log('Root endpoint accessed, redirecting to /api/health');
-  res.redirect('/api/health');
-});
+// Create router for API endpoints
+const apiRouter = express.Router();
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+apiRouter.get('/health', (req, res) => {
   console.log('Health check endpoint called');
   res.status(200).json({ 
     status: 'ok',
@@ -41,8 +38,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Routes
-app.use("/api/transactions", transactionRoute);
+// Mount transaction routes
+apiRouter.use('/transactions', transactionRoute);
+
+// Mount API router
+app.use('/api', apiRouter);
+
+// Root endpoint redirect
+app.get('/', (req, res) => {
+  console.log('Root endpoint accessed, redirecting to /api/health');
+  res.redirect('/api/health');
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
