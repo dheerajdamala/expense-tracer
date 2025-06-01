@@ -30,9 +30,14 @@ app.use(rateLimiter);
 // Root endpoint handler
 app.get('/', (req, res) => {
   console.log('Root endpoint accessed');
+  res.redirect('/api/health');
+});
+
+// Health check endpoint
+const healthCheck = (req, res) => {
+  console.log('Health check endpoint called');
   res.status(200).json({
     status: 'ok',
-    message: 'Expense Tracker API',
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV || 'development',
     endpoints: {
@@ -42,22 +47,13 @@ app.get('/', (req, res) => {
       summary: ['/transactions/summary/:userId', '/api/transactions/summary/:userId']
     }
   });
-});
-
-// Health check endpoints
-const healthCheck = (req, res) => {
-  console.log('Health check endpoint called');
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV || 'development'
-  });
 };
 
+// Mount health check at both paths
 app.get('/health', healthCheck);
 app.get('/api/health', healthCheck);
 
-// Mount transaction routes
+// Mount transaction routes at both paths
 app.use('/transactions', transactionRoute);
 app.use('/api/transactions', transactionRoute);
 
@@ -100,14 +96,13 @@ initDB()
     }
     
     app.listen(PORT, HOST, () => {
-      const baseUrl = `http://${HOST}:${PORT}`;
       console.log(`\nServer is running on ${HOST}:${PORT}`);
       console.log('\nAvailable endpoints:');
-      console.log('- Root:', baseUrl);
-      console.log(`- Health check: ${baseUrl}/health or ${baseUrl}/api/health`);
-      console.log(`- Transactions: ${baseUrl}/transactions or ${baseUrl}/api/transactions`);
-      console.log(`- Transaction summary: ${baseUrl}/transactions/summary/:userId`);
-      console.log(`- User transactions: ${baseUrl}/transactions/:userId`);
+      console.log(`- Root: http://${HOST}:${PORT}`);
+      console.log(`- Health check: http://${HOST}:${PORT}/health or /api/health`);
+      console.log(`- Transactions: http://${HOST}:${PORT}/transactions or /api/transactions`);
+      console.log(`- Transaction summary: http://${HOST}:${PORT}/transactions/summary/:userId`);
+      console.log(`- User transactions: http://${HOST}:${PORT}/transactions/:userId`);
       console.log('\nEnvironment:', process.env.NODE_ENV || 'development');
       console.log('Proxy trusted:', app.get('trust proxy'));
       
