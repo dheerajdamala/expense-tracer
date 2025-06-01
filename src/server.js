@@ -41,14 +41,9 @@ apiRouter.get('/health', (req, res) => {
 // Mount transaction routes
 apiRouter.use('/transactions', transactionRoute);
 
-// Mount API router
+// Mount API router at both paths
+app.use('/', apiRouter);
 app.use('/api', apiRouter);
-
-// Root endpoint redirect
-app.get('/', (req, res) => {
-  console.log('Root endpoint accessed, redirecting to /api/health');
-  res.redirect('/api/health');
-});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -64,9 +59,13 @@ app.use((req, res) => {
     path: req.originalUrl,
     method: req.method,
     availableEndpoints: [
+      '/health',
       '/api/health',
+      '/transactions',
       '/api/transactions',
+      '/transactions/:userId',
       '/api/transactions/:userId',
+      '/transactions/summary/:userId',
       '/api/transactions/summary/:userId'
     ]
   });
@@ -86,10 +85,10 @@ initDB()
       const baseUrl = `http://${HOST}:${PORT}`;
       console.log(`Server is running on ${HOST}:${PORT}`);
       console.log('\nAvailable endpoints:');
-      console.log(`- Health check: ${baseUrl}/api/health`);
-      console.log(`- Transactions: ${baseUrl}/api/transactions`);
-      console.log(`- Transaction summary: ${baseUrl}/api/transactions/summary/:userId`);
-      console.log(`- User transactions: ${baseUrl}/api/transactions/:userId`);
+      console.log(`- Health check: ${baseUrl}/health or ${baseUrl}/api/health`);
+      console.log(`- Transactions: ${baseUrl}/transactions or ${baseUrl}/api/transactions`);
+      console.log(`- Transaction summary: ${baseUrl}/transactions/summary/:userId`);
+      console.log(`- User transactions: ${baseUrl}/transactions/:userId`);
       console.log('\nEnvironment:', process.env.NODE_ENV || 'development');
       console.log('Proxy trusted:', app.get('trust proxy'));
     });
