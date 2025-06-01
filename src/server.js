@@ -25,7 +25,10 @@ app.use(rateLimiter);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   console.log('Health check endpoint called');
-  res.status(200).json({ status: 'ok' });
+  res.status(200).json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Routes
@@ -40,10 +43,20 @@ app.use((err, req, res, next) => {
 // 404 handler
 app.use((req, res) => {
   console.log(`404 - Not Found: ${req.method} ${req.url}`);
-  res.status(404).json({ error: 'Not Found', path: req.url });
+  res.status(404).json({ 
+    error: 'Not Found', 
+    path: req.url,
+    availableEndpoints: [
+      '/api/health',
+      '/api/transactions',
+      '/api/transactions/:userId',
+      '/api/transactions/summary/:userId'
+    ]
+  });
 });
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Initialize database and start server
 initDB()
@@ -52,10 +65,14 @@ initDB()
       job.start();
     }
     
-    app.listen(PORT, () => {
-      console.log(`Server is running on port: ${PORT}`);
-      console.log(`Health check endpoint: http://localhost:${PORT}/api/health`);
-      console.log(`Transactions endpoint: http://localhost:${PORT}/api/transactions`);
+    app.listen(PORT, HOST, () => {
+      console.log(`Server is running on ${HOST}:${PORT}`);
+      console.log('Available endpoints:');
+      console.log('- Health check: /api/health');
+      console.log('- Transactions: /api/transactions');
+      console.log('- Transaction summary: /api/transactions/summary/:userId');
+      console.log('- User transactions: /api/transactions/:userId');
+      console.log('\nEnvironment:', process.env.NODE_ENV || 'development');
     });
   })
   .catch(error => {
