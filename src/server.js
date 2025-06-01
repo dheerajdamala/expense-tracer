@@ -16,7 +16,9 @@ app.set('trust proxy', true);
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl} (${req.ip})`);
+  const timestamp = new Date().toISOString();
+  const { method, originalUrl, ip } = req;
+  console.log(`${timestamp} - ${method} ${originalUrl} (${ip})`);
   next();
 });
 
@@ -25,49 +27,65 @@ app.use(cors());
 app.use(express.json());
 app.use(rateLimiter);
 
-// Create router for API endpoints
-const apiRouter = express.Router();
+// Root endpoint handler
+app.get('/', (req, res) => {
+  console.log('Root endpoint accessed');
+  res.status(200).json({
+    status: 'ok',
+    message: 'Expense Tracker API',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development',
+    endpoints: {
+      health: ['/health', '/api/health'],
+      transactions: ['/transactions', '/api/transactions'],
+      userTransactions: ['/transactions/:userId', '/api/transactions/:userId'],
+      summary: ['/transactions/summary/:userId', '/api/transactions/summary/:userId']
+    }
+  });
+});
 
-// Health check endpoint
-apiRouter.get('/health', (req, res) => {
+// Health check endpoints
+const healthCheck = (req, res) => {
   console.log('Health check endpoint called');
-  res.status(200).json({ 
+  res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV || 'development'
   });
-});
+};
+
+app.get('/health', healthCheck);
+app.get('/api/health', healthCheck);
 
 // Mount transaction routes
-apiRouter.use('/transactions', transactionRoute);
-
-// Mount API router at both paths
-app.use('/', apiRouter);
-app.use('/api', apiRouter);
+app.use('/transactions', transactionRoute);
+app.use('/api/transactions', transactionRoute);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
-  res.status(500).json({ error: 'Something broke!', details: err.message });
+  res.status(500).json({
+    error: 'Something broke!',
+    details: err.message,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // 404 handler
 app.use((req, res) => {
   console.log(`404 - Not Found: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ 
-    error: 'Not Found', 
+  res.status(404).json({
+    error: 'Not Found',
     path: req.originalUrl,
     method: req.method,
-    availableEndpoints: [
-      '/health',
-      '/api/health',
-      '/transactions',
-      '/api/transactions',
-      '/transactions/:userId',
-      '/api/transactions/:userId',
-      '/transactions/summary/:userId',
-      '/api/transactions/summary/:userId'
-    ]
+    timestamp: new Date().toISOString(),
+    availableEndpoints: {
+      root: '/',
+      health: ['/health', '/api/health'],
+      transactions: ['/transactions', '/api/transactions'],
+      userTransactions: ['/transactions/:userId', '/api/transactions/:userId'],
+      summary: ['/transactions/summary/:userId', '/api/transactions/summary/:userId']
+    }
   });
 });
 
@@ -83,14 +101,23 @@ initDB()
     
     app.listen(PORT, HOST, () => {
       const baseUrl = `http://${HOST}:${PORT}`;
-      console.log(`Server is running on ${HOST}:${PORT}`);
+      console.log(`\nServer is running on ${HOST}:${PORT}`);
       console.log('\nAvailable endpoints:');
+      console.log('- Root:', baseUrl);
       console.log(`- Health check: ${baseUrl}/health or ${baseUrl}/api/health`);
       console.log(`- Transactions: ${baseUrl}/transactions or ${baseUrl}/api/transactions`);
       console.log(`- Transaction summary: ${baseUrl}/transactions/summary/:userId`);
       console.log(`- User transactions: ${baseUrl}/transactions/:userId`);
       console.log('\nEnvironment:', process.env.NODE_ENV || 'development');
       console.log('Proxy trusted:', app.get('trust proxy'));
+      
+      // Print all registered routes
+      console.log('\nRegistered routes:');
+      app._router.stack.forEach(r => {
+        if (r.route && r.route.path) {
+          console.log(`${Object.keys(r.route.methods).join(',')} ${r.route.path}`);
+        }
+      });
     });
   })
   .catch(error => {
